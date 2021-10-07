@@ -6,25 +6,74 @@ pacman::p_load(
   raster, # raster data operations
   tidyverse,
   exactextractr,
-  rgdal
+  rgdal,
+  cowplot,
+  rcartocolor
   )
 
+# Study region
 ar_co <- readOGR("Data/AR_shapefile/tl_2010_05_county10.shp",
               stringsAsFactors = FALSE)
-ar_b <- aggregate(ar_co, dissolve = TRUE)
+ar_b <- st_as_sf(aggregate(ar_co, dissolve = TRUE))
 delta_co <- c("Arkansas","Chicot","Clay","Craighead","Desha","Drew","Greene","Lee","Mississippi","Monroe",
              "Phillips","Poinsett","St. Francis","Jackson","Lawrence", "Jefferson","Lonoke","Crittenden","Woodruff",
              "Prairie","Randolph","White","Pulaski","Lincoln","Ashley","Cross","Lonoke")
 gp <- c("Arkansas","Prairie","Lonoke")
 ar_delta <- ar_co[as.character(ar_co@data$NAME10) %in% delta_co, ]
 gp_co <- ar_delta[as.character(ar_delta@data$NAME10) %in% gp, ]
-gp_b <- aggregate(gp_co, dissolve = TRUE)
-ar_delta_b <- aggregate(ar_delta, dissolve = TRUE)
-ar_map <- readOGR("Data/Delta_Alluvial_Shapefile/Delta.shp", stringsAsFactors = FALSE)
+gp_b <- st_as_sf(aggregate(gp_co, dissolve = TRUE))
+ar_delta_b <- st_as_sf(aggregate(ar_delta, dissolve = TRUE))
+ar_map <- st_as_sf(readOGR("Data/Delta_Alluvial_Shapefile/Delta.shp", stringsAsFactors = FALSE))
 
+# Get all in UTM15N/NAD83
+all_sf <- list(ar_b, ar_delta_b, ar_map, gp_b)
+ar_all <- lapply(all_sf, st_transform, crs = 26915)
+
+ar <- ar_all[[1]]
+delta <- ar_all[[2]]
+map <- ar_all[[3]]
+gp <- ar_all[[4]]
+
+# Groundwater raster
 dtw <- raster("Data/krig_Spring2009.tif")
-gp_huc12 <- spTransform(gp_b, CRS(proj4string(dtw)))
-gp_huc12_r <- crop(dtw, extent(gp_huc12)) %>% 
-                        mask (., gp_huc12)
+dtw <- projectRaster(dtw, crs = 26915)
 
-wells
+dtw_r <- crop(dtw, extent(gp)) %>% 
+                        mask (., gp)
+dtw_pts <- rasterToPoints(dtw_r, spatial = TRUE)
+dtw_df <- data.frame(dtw_pts)
+View(dtw_df)
+# Depth measurements
+wells <- readRDS("Data/well_reading.rds")
+wells <- st_as_sf(wells, coords = c("Longitude", "Latitude"))
+st_crs(wells) <- 4326
+wells <- st_transform(wells, crs = 26915) 
+
+library(Rcpp)
+(inset <- ggplot() +
+  geom_sf(data=ar, fill="grey", color="black",size=1)+
+  geom_sf(data = map, fill="#f7fcb9")+
+  geom_sf(data = gp, fill="#f7fcb9", color="blue", size=1.2)+
+  theme_void()
+  )
+inset
+  
+(gg_gp <- ggplot() +
+  geom_sf(data=ar, fill="grey")+
+  geom_sf(data=map, fill="#f7fcb9")+
+  geom_sf(data=gp, fill="#f7fcb9")+
+  geom_raster(data=dtw_df, aes(x = x, y = y, fill = krig_Spring2009))+
+  scale_fill_viridis_c(option = "turbo", direction = 1)+
+  geom_sf(data=gp, fill=NA, color="blue", size=1.2) +
+  geom_sf(data=wells, color="#0c2c84")+
+  theme(legend.position = c(0.25,0.2), legend.background = element_blank(),
+        axis.title.x=element_blank(), axis.title.y=element_blank())+
+  labs(fill = "Depth-to-Water\n(ft)") +
+  coord_sf(xlim = st_bbox(gp)[c(1, 3)],
+           ylim = st_bbox(gp)[c(2, 4)])
+)
+
+(gg_inset <- ggdraw() +
+  draw_plot(gg_gp) +
+  draw_plot(inset, x=0.66, y=0.65, width=0.35, height=0.35)
+)
