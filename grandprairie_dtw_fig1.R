@@ -65,10 +65,11 @@ inset
   geom_raster(data=dtw_df, aes(x = x, y = y, fill = krig_Spring2009))+
   scale_fill_viridis_c(option = "turbo", direction = 1)+
   geom_sf(data=gp, fill=NA, color="blue", size=1.2) +
-  geom_sf(data=wells, color="#0c2c84")+
-  theme(legend.position = c(0.25,0.2), legend.background = element_blank(),
+  geom_sf(data=wells, fill="#0c2c84", aes(color="Wells"), size=2)+
+  theme(legend.position = c(0.25,0.25), legend.background = element_blank(), legend.key = element_blank(),
         axis.title.x=element_blank(), axis.title.y=element_blank())+
-  labs(fill = "Depth-to-Water\n(ft)") +
+  labs(fill = "Depth-to-Water\n(ft)", colour="") +
+  scale_color_manual(values=c("Wells"="#0c2c84"))+
   coord_sf(xlim = st_bbox(gp)[c(1, 3)],
            ylim = st_bbox(gp)[c(2, 4)])
 )
@@ -77,3 +78,4 @@ inset
   draw_plot(gg_gp) +
   draw_plot(inset, x=0.66, y=0.65, width=0.35, height=0.35)
 )
+ggsave("dtw_inset_fig1.png", width = 7, height=6, units="in")
