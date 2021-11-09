@@ -42,6 +42,7 @@ dtw_r <- crop(dtw, extent(gp)) %>%
                         mask (., gp)
 dtw_pts <- rasterToPoints(dtw_r, spatial = TRUE)
 dtw_df <- data.frame(dtw_pts)
+dtw_df$krig_Spring2009_m <- dtw_df$krig_Spring2009*0.3048
 View(dtw_df)
 # Depth measurements
 wells <- readRDS("Data/well_reading.rds")
@@ -62,13 +63,14 @@ inset
   geom_sf(data=ar, fill="grey")+
   geom_sf(data=map, fill="#f7fcb9")+
   geom_sf(data=gp, fill="#f7fcb9")+
-  geom_raster(data=dtw_df, aes(x = x, y = y, fill = krig_Spring2009))+
+  geom_raster(data=dtw_df, aes(x = x, y = y, fill = krig_Spring2009_m))+
   scale_fill_viridis_c(option = "turbo", direction = 1)+
   geom_sf(data=gp, fill=NA, color="blue", size=1.2) +
   geom_sf(data=wells, fill="#0c2c84", aes(color="Wells"), size=2)+
-  theme(legend.position = c(0.25,0.25), legend.background = element_blank(), legend.key = element_blank(),
-        axis.title.x=element_blank(), axis.title.y=element_blank())+
-  labs(fill = "Depth-to-Water\n(ft)", colour="") +
+  theme(legend.position = c(1.12,0.25), legend.background = element_blank(), legend.key = element_blank(),
+        axis.title.x=element_blank(), axis.title.y=element_blank(),
+        legend.text=element_text(size=12))+
+  labs(fill = "Depth-to-Water\n(m)", colour="", size=12) +
   scale_color_manual(values=c("Wells"="#0c2c84"))+
   coord_sf(xlim = st_bbox(gp)[c(1, 3)],
            ylim = st_bbox(gp)[c(2, 4)])
@@ -76,6 +78,7 @@ inset
 
 (gg_inset <- ggdraw() +
   draw_plot(gg_gp) +
-  draw_plot(inset, x=0.66, y=0.65, width=0.35, height=0.35)
+  draw_plot(inset, x=0.66, y=0.65, width=0.35, height=0.35) +
+  theme(plot.background = element_rect(fill = "White"))
 )
 ggsave("dtw_inset_fig1.png", width = 7, height=6, units="in")
