@@ -74,11 +74,11 @@ inset
   geom_sf(data=wells, aes(color="Wells"), size=2)+
   labs(fill = "Depth-to-Water\n(m)", colour="", size=12) +
   #scale_fill_manual(values=c("MS Alluvial Plain"="#f7fcb9"))+
-  scale_color_manual(values=c("Wells"="#0c2c84", "HUC-12s"="grey","MS Alluvial\nPlain"="#f7fcb9"), 
+  scale_color_manual(values=c("Wells"="#0c2c84", "HUC-12s"="dark grey","MS Alluvial\nPlain"="#f7fcb9"), 
                      name = NULL, guide = guide_legend(override.aes = list(linetype = c("blank", "solid", "blank"), 
                                                               shape = c(16, NA, 15),
                                                               fill=c(NA,NA,NA))))+
-  theme(legend.position = c(1.12,0.25), legend.background = element_blank(), legend.key = element_blank(),
+  theme(legend.position = c(0.13,0.22), legend.background = element_blank(), legend.key = element_blank(),
           axis.title.x=element_blank(), axis.title.y=element_blank(),
           legend.text=element_text(size=12))+
   coord_sf(xlim = st_bbox(gp)[c(1, 3)],
